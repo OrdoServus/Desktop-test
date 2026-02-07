@@ -1,8 +1,3 @@
-"""
-Auto-Updater für die Web App
-Überprüft GitHub Releases auf neue Versionen
-"""
-
 import requests
 import json
 import webbrowser
@@ -11,17 +6,15 @@ from PyQt5.QtWidgets import QMessageBox
 from PyQt5.QtCore import QThread, pyqtSignal
 
 class UpdateChecker(QThread):
-    """Background thread für Update-Check"""
     update_available = pyqtSignal(str, str, str)  # version, download_url, release_notes
 
     def __init__(self, current_version, github_repo):
         super().__init__()
         self.current_version = current_version
-        self.github_repo = github_repo  # Format: "username/repo"
+        self.github_repo = "OrdoServus/Desktop-test"
         self.update_found = False
     
     def run(self):
-        """Prüft auf Updates"""
         try:
             # GitHub API: Latest Release abrufen
             api_url = f"https://api.github.com/repos/{self.github_repo}/releases/latest"
@@ -50,7 +43,6 @@ class UpdateChecker(QThread):
             print(f"Update-Check fehlgeschlagen: {e}")
 
 def show_update_dialog(parent, new_version, download_url, release_notes):
-    """Zeigt Update-Dialog"""
     msg = QMessageBox(parent)
     msg.setWindowTitle("Update verfügbar")
     msg.setIcon(QMessageBox.Information)
@@ -67,15 +59,6 @@ def show_update_dialog(parent, new_version, download_url, release_notes):
         webbrowser.open(download_url)
 
 def check_for_updates(parent, current_version, github_repo, silent=False):
-    """
-    Startet Update-Check
-    
-    Args:
-        parent: Parent Widget (für Dialog)
-        current_version: Aktuelle Version (z.B. "1.0.0")
-        github_repo: GitHub Repo (z.B. "username/web-app")
-        silent: Wenn True, keine Meldung wenn kein Update verfügbar
-    """
     checker = UpdateChecker(current_version, github_repo)
     
     def on_update_found(new_version, download_url, release_notes):

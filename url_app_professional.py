@@ -15,31 +15,28 @@ except ImportError:
     UPDATER_AVAILABLE = False
 
 # Version der App
-APP_VERSION = "1.0.0"
+APP_VERSION = "0.1"
 
 class ProfessionalWebApp(QMainWindow):
-    def __init__(self, url, app_name="Web App", github_repo=None):
+    def __init__(self, url, app_name="OrdoServus APP", github_repo="OrdoServus/Desktop-test"):
         super().__init__()
         self.home_url = url
         self.app_name = app_name
         self.github_repo = github_repo
-        self.settings = QSettings("MyCompany", app_name)
+        self.settings = QSettings("OrdoServus", app_name)
         self.dark_mode = self.settings.value("dark_mode", False, type=bool)
         
         self.init_ui()
         self.restore_settings()
         self.create_system_tray()
         
-        # Auto-Update beim Start prüfen (nach 2 Sekunden)
         if UPDATER_AVAILABLE and github_repo:
             from PyQt5.QtCore import QTimer
             QTimer.singleShot(2000, lambda: check_for_updates(self, APP_VERSION, github_repo, silent=True))
     
     def init_ui(self):
-        # Fensterkonfiguration
         self.setWindowTitle(self.app_name)
         
-        # WebEngine View mit Profil für Cookies/Session
         profile = QWebEngineProfile.defaultProfile()
         profile.downloadRequested.connect(self.on_download_requested)
         
@@ -47,10 +44,7 @@ class ProfessionalWebApp(QMainWindow):
         self.setCentralWidget(self.browser)
         self.browser.setUrl(QUrl(self.home_url))
         
-        # Menüleiste erstellen
         self.create_menu()
-        
-        # Dark Mode anwenden
         self.apply_theme()
     
     def create_menu(self):
@@ -64,14 +58,6 @@ class ProfessionalWebApp(QMainWindow):
         reload_action.setShortcut(QKeySequence('F5'))
         reload_action.triggered.connect(self.reload_page)
         file_menu.addAction(reload_action)
-        
-        file_menu.addSeparator()
-        
-        # In Hintergrund minimieren
-        minimize_action = QAction('In &Hintergrund', self)
-        minimize_action.setShortcut(QKeySequence('Ctrl+H'))
-        minimize_action.triggered.connect(self.hide)
-        file_menu.addAction(minimize_action)
         
         file_menu.addSeparator()
         
@@ -105,11 +91,6 @@ class ProfessionalWebApp(QMainWindow):
         nav_menu.addAction(home_action)
         
         nav_menu.addSeparator()
-        
-        # Verlauf löschen
-        clear_history_action = QAction('Verlauf &löschen', self)
-        clear_history_action.triggered.connect(self.clear_history)
-        nav_menu.addAction(clear_history_action)
         
         # Ansicht-Menü
         view_menu = menubar.addMenu('&Ansicht')
@@ -166,17 +147,14 @@ class ProfessionalWebApp(QMainWindow):
         help_menu.addAction(about_action)
     
     def create_system_tray(self):
-        """System Tray Icon erstellen"""
         self.tray_icon = QSystemTrayIcon(self)
 
-        # Icon setzen (benutzerdefiniertes Icon, Fallback auf Standard-Icon)
         if os.path.exists("icon.ico"):
             icon = QIcon("icon.ico")
         else:
             icon = self.style().standardIcon(QStyle.SP_ComputerIcon)
         self.tray_icon.setIcon(icon)
         
-        # Tray-Menü
         tray_menu = QMenu()
         
         show_action = QAction("Anzeigen", self)
@@ -198,7 +176,6 @@ class ProfessionalWebApp(QMainWindow):
         self.tray_icon.show()
     
     def tray_icon_activated(self, reason):
-        """Bei Doppelklick auf Tray-Icon Fenster anzeigen"""
         if reason == QSystemTrayIcon.DoubleClick:
             if self.isVisible():
                 self.hide()
@@ -207,8 +184,6 @@ class ProfessionalWebApp(QMainWindow):
                 self.activateWindow()
     
     def on_download_requested(self, download):
-        """Download-Manager"""
-        # Download-Pfad wählen
         path, _ = QFileDialog.getSaveFileName(
             self, 
             "Datei speichern", 
@@ -219,12 +194,10 @@ class ProfessionalWebApp(QMainWindow):
             download.setPath(path)
             download.accept()
             
-            # Download-Status anzeigen
             download.finished.connect(lambda: self.download_finished(path))
             download.downloadProgress.connect(self.download_progress)
     
     def download_finished(self, path):
-        """Benachrichtigung wenn Download fertig ist"""
         self.tray_icon.showMessage(
             "Download abgeschlossen",
             f"Datei gespeichert: {os.path.basename(path)}",
@@ -233,7 +206,6 @@ class ProfessionalWebApp(QMainWindow):
         )
     
     def download_progress(self, bytes_received, bytes_total):
-        """Download-Fortschritt (optional im Fenster-Titel anzeigen)"""
         if bytes_total > 0:
             progress = int((bytes_received / bytes_total) * 100)
             self.setWindowTitle(f"{self.app_name} - Download: {progress}%")
@@ -244,22 +216,6 @@ class ProfessionalWebApp(QMainWindow):
     def go_home(self):
         self.browser.setUrl(QUrl(self.home_url))
     
-    def clear_history(self):
-        """Browsing-Daten löschen"""
-        reply = QMessageBox.question(
-            self,
-            'Verlauf löschen',
-            'Möchtest du den Browserverlauf und alle Cookies löschen?',
-            QMessageBox.Yes | QMessageBox.No,
-            QMessageBox.No
-        )
-        
-        if reply == QMessageBox.Yes:
-            profile = QWebEngineProfile.defaultProfile()
-            profile.clearAllVisitedLinks()
-            profile.cookieStore().deleteAllCookies()
-            QMessageBox.information(self, 'Erledigt', 'Verlauf und Cookies wurden gelöscht.')
-    
     def toggle_fullscreen(self):
         if self.isFullScreen():
             self.showNormal()
@@ -267,13 +223,11 @@ class ProfessionalWebApp(QMainWindow):
             self.showFullScreen()
     
     def toggle_dark_mode(self):
-        """Dark Mode umschalten"""
         self.dark_mode = not self.dark_mode
         self.settings.setValue("dark_mode", self.dark_mode)
         self.apply_theme()
     
     def apply_theme(self):
-        """Theme anwenden"""
         if self.dark_mode:
             # Dark Mode
             self.setStyleSheet("""
@@ -296,7 +250,6 @@ class ProfessionalWebApp(QMainWindow):
                 }
             """)
         else:
-            # Light Mode
             self.setStyleSheet("")
     
     def zoom_in(self):
@@ -324,21 +277,11 @@ class ProfessionalWebApp(QMainWindow):
             self, 
             f'Über {self.app_name}', 
             f'{self.app_name} v{APP_VERSION}\n\n'
-            f'URL: {self.home_url}\n'
             f'{update_info}\n\n'
-            f'Features:\n'
-            f'✓ System Tray Icon\n'
-            f'✓ Dark Mode\n'
-            f'✓ Download-Manager\n'
-            f'✓ Cookies & Session speichern\n'
-            f'✓ Fensterposition merken\n'
-            f'✓ Zoom-Level speichern\n'
-            f'✓ Auto-Update Funktion\n\n'
-            f'Erstellt mit PyQt5'
+            'Entwickelt von OrdoServus'
         )
     
     def check_updates(self):
-        """Manuell nach Updates suchen"""
         if UPDATER_AVAILABLE:
             if self.github_repo:
                 check_for_updates(self, APP_VERSION, self.github_repo, silent=False)
@@ -357,26 +300,20 @@ class ProfessionalWebApp(QMainWindow):
             )
     
     def restore_settings(self):
-        """Gespeicherte Einstellungen wiederherstellen"""
-        # Fensterposition und -größe
         if self.settings.value("geometry"):
             self.restoreGeometry(self.settings.value("geometry"))
         else:
-            # Standard-Größe wenn keine gespeichert
             self.setGeometry(100, 100, 1200, 800)
         
-        # Zoom-Level
         zoom_level = self.settings.value("zoom_level", 1.0, type=float)
         self.browser.setZoomFactor(zoom_level)
     
     def save_settings(self):
-        """Einstellungen speichern"""
         self.settings.setValue("geometry", self.saveGeometry())
         self.settings.setValue("zoom_level", self.browser.zoomFactor())
         self.settings.setValue("dark_mode", self.dark_mode)
     
     def closeEvent(self, event):
-        """Beim Schließen in Tray minimieren statt beenden"""
         event.ignore()
         self.hide()
         self.tray_icon.showMessage(
@@ -387,26 +324,18 @@ class ProfessionalWebApp(QMainWindow):
         )
     
     def quit_application(self):
-        """Anwendung wirklich beenden"""
         self.save_settings()
         self.tray_icon.hide()
         QApplication.quit()
 
 def main():
-    # ========================================
-    # KONFIGURATION - HIER ANPASSEN!
-    # ========================================
-    
-    APP_NAME = "Meine Web App"  # Name der Anwendung
-    TARGET_URL = "https://www.example.com"  # Deine URL
-    GITHUB_REPO = None  # Optional: "username/repo" für Auto-Updates
-    
-    # ========================================
+    APP_NAME = "OrdoServus APP"
+    TARGET_URL = "https://www.sob.ch"
+    GITHUB_REPO = "OrdoServus/Desktop-test"
     
     app = QApplication(sys.argv)
     app.setApplicationName(APP_NAME)
     
-    # Optional: Eigenes Icon laden (wenn vorhanden)
     app.setWindowIcon(QIcon("icon.ico"))
     
     window = ProfessionalWebApp(TARGET_URL, APP_NAME, GITHUB_REPO)
