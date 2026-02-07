@@ -18,7 +18,7 @@ from .settings import AppSettings
 from .__version__ import __version__
 
 class ProfessionalWebApp(QMainWindow):
-    def __init__(self, url, app_name="OrdoServus APP", github_repo="OrdoServus/Desktop-test"):
+    def __init__(self, url, app_name="OrdoServus Desktop", github_repo="OrdoServus/Desktop-test"):
         super().__init__()
         self.home_url = url
         self.app_name = app_name

@@ -39,7 +39,7 @@ Bevor du einen PR erstellst:
 
 1. Erstelle ein Issue oder kommentiere ein bestehendes.
 2. Forke das Repository.
-3. Erstelle einen Branch mit einem klaren Namen, z. B.  
+3. Erstelle einen Branch mit einem klaren Namen, z. B.  
    `feature/login-ui`, `fix/form-validation`, `docs/impressum-update`
 4. Schreibe sauberen, gut strukturierten Code.
 5. Füge Tests hinzu, wenn möglich.
@@ -53,7 +53,7 @@ Bevor du einen PR erstellst:
 ## 🧪 Code‑Standards
 
 - Verwende die bestehende Projektstruktur.
-- Halte dich an die Formatierungsregeln (z. B. Prettier/ESLint, falls vorhanden).
+- Halte dich an die Formatierungsregeln (z. B. Prettier/ESLint, falls vorhanden).
 - Schreibe verständliche Commit‑Messages:
   - `feat: neues Modul für Benutzerverwaltung`
   - `fix: Fehler in Formularvalidierung behoben`
@@ -67,7 +67,7 @@ Wenn du eine Sicherheitslücke findest:
 
 - **Bitte kein öffentliches Issue erstellen.**
 - Kontaktiere uns direkt unter:  
-  **[E-Mail-Adresse der verantwortlichen Stelle]**
+  **ordo.servus@gmx.ch**
 - Wir melden uns zeitnah zurück.
 
 ---

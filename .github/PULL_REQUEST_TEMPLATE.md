@@ -26,7 +26,7 @@ Details: …
 - [ ] Code ist sauber und gut strukturiert
 - [ ] Keine sensiblen Daten enthalten
 - [ ] Dokumentation aktualisiert (falls nötig)
-- [ ] Issue referenziert (z. B. `Closes #123`)
+- [ ] Issue referenziert (z. B. `Closes #123`)
 
 ---
 

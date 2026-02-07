@@ -14,7 +14,7 @@ class UpdateChecker(QThread):
     def __init__(self, current_version, github_repo):
         super().__init__()
         self.current_version = current_version
-        self.github_repo = "OrdoServus/Desktop-test"
+        self.github_repo = github_repo  # Korrigiert: Verwende den übergebenen Parameter
         self.update_found = False
     
     def run(self):
@@ -68,7 +68,7 @@ def check_for_updates(parent, current_version, github_repo, silent=False):
         show_update_dialog(parent, new_version, download_url, release_notes)
     
     def on_finished():
-        if not silent and not checker.update_available:
+        if not silent and not checker.update_found:
             QMessageBox.information(
                 parent,
                 "Keine Updates",
