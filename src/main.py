@@ -1,0 +1,29 @@
+# Copyright (c) 2026 OrdoServus
+# Licensed under the MIT License
+
+import sys
+import os
+from PyQt5.QtWidgets import QApplication
+from PyQt5.QtGui import QIcon
+
+from .ui import ProfessionalWebApp
+
+def main():
+    APP_NAME = "OrdoServus APP"
+    TARGET_URL = "https://www.sob.ch"
+    GITHUB_REPO = "OrdoServus/Desktop-test"
+
+    app = QApplication(sys.argv)
+    app.setApplicationName(APP_NAME)
+
+    icon_path = os.path.join(os.path.dirname(__file__), '..', 'assets', 'icon.ico')
+    if os.path.exists(icon_path):
+        app.setWindowIcon(QIcon(icon_path))
+
+    window = ProfessionalWebApp(TARGET_URL, APP_NAME, GITHUB_REPO)
+    window.show()
+
+    sys.exit(app.exec_())
+
+if __name__ == "__main__":
+    main()

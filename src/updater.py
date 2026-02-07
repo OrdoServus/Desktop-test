@@ -1,3 +1,6 @@
+# Copyright (c) 2026 OrdoServus
+# Licensed under the MIT License
+
 import requests
 import json
 import webbrowser
