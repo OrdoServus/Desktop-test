@@ -40,21 +40,36 @@ OrdoServus Desktop ist eine native Desktop-Anwendung, die die OrdoServus-Web-App
    pip install -r requirements.txt
    ```
 
-3. Anwendung starten:
+3. **Wichtig:** Öffne `src/main.py` und passe die `TARGET_URL` an die tatsächliche URL deiner OrdoServus-Web-App an.
+
+4. Anwendung starten:
    ```bash
-   python src/main.py
+   python -m src.main
    ```
+
+## 📦 Ausführbare Datei erstellen
+
+Um eine standalone .exe-Datei zu erstellen:
+
+```bash
+pip install pyinstaller
+pyinstaller --onefile --windowed --icon=assets/icon.ico --name="OrdoServus Desktop" src/main.py
+```
+
+Die .exe-Datei befindet sich dann im `dist/`-Ordner.
 
 ## 📁 Projektstruktur
 ```
 Desktop-test/
 ├── src/                    # Quellcode
+│   ├── __init__.py         # Paket-Initialisierung
 │   ├── __version__.py      # Version
 │   ├── main.py             # Einstiegspunkt
 │   ├── ui.py               # GUI-Klasse
 │   ├── settings.py         # Einstellungsverwaltung
 │   └── updater.py          # Update-Modul
 ├── assets/                 # Ressourcen (Icons, etc.)
+│   └── icon.ico            # Anwendungs-Icon (erstellen)
 ├── requirements.txt        # Python-Abhängigkeiten
 ├── README.md               # Diese Datei
 ├── CONTRIBUTING.md         # Beitragsrichtlinien
@@ -62,8 +77,26 @@ Desktop-test/
 └── SECURITY.md             # Sicherheitsrichtlinien
 ```
 
+## ⚙️ Konfiguration
+
+### URL anpassen
+Öffne `src/main.py` und ändere die `TARGET_URL`:
+```python
+TARGET_URL = "https://deine-ordoservus-url.de"
+```
+
+### Icon hinzufügen
+Lege eine `icon.ico`-Datei im `assets/`-Verzeichnis ab. Du kannst Online-Konverter nutzen, um PNG zu ICO zu konvertieren.
+
 ## 🤝 Beitragen
 Siehe [CONTRIBUTING.md](CONTRIBUTING.md) für Details zu Beiträgen.
 
+## 🔒 Sicherheit
+Siehe [SECURITY.md](SECURITY.md) für Sicherheitsrichtlinien.
+
 ## 📜 Lizenz
 Dieses Projekt ist unter der MIT-Lizenz lizenziert. Siehe [LICENSE](LICENSE) für Details.
+
+## 📧 Kontakt
+- E-Mail: ordo.servus@gmx.ch
+- GitHub: [OrdoServus](https://github.com/OrdoServus)

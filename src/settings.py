@@ -4,7 +4,7 @@
 from PyQt5.QtCore import QSettings
 
 class AppSettings:
-    def __init__(self, organization="OrdoServus", app_name="OrdoServus APP"):
+    def __init__(self, organization="OrdoServus", app_name="OrdoServus Desktop"):
         self.settings = QSettings(organization, app_name)
 
     def get_dark_mode(self):

@@ -9,8 +9,8 @@ from PyQt5.QtGui import QIcon
 from .ui import ProfessionalWebApp
 
 def main():
-    APP_NAME = "OrdoServus APP"
-    TARGET_URL = "https://www.sob.ch"
+    APP_NAME = "OrdoServus Desktop"
+    TARGET_URL = "https://sob.ch"
     GITHUB_REPO = "OrdoServus/Desktop-test"
 
     app = QApplication(sys.argv)
