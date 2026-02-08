@@ -9,7 +9,7 @@ from PyQt5.QtWebEngineWidgets import QWebEngineView, QWebEngineProfile, QWebEngi
 from PyQt5.QtGui import QKeySequence, QIcon
 
 try:
-    from .updater import check_for_updates
+    from updater import check_for_updates
     UPDATER_AVAILABLE = True
 except ImportError:
     UPDATER_AVAILABLE = False

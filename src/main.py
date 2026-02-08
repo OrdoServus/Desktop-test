@@ -6,6 +6,13 @@ import os
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtGui import QIcon
 
+if getattr(sys, 'frozen', False):
+    application_path = sys._MEIPASS
+else:
+    application_path = os.path.dirname(os.path.abspath(__file__))
+
+sys.path.insert(0, application_path)
+
 from ui import ProfessionalWebApp
 
 def main():

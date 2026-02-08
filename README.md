@@ -49,14 +49,33 @@ OrdoServus Desktop ist eine native Desktop-Anwendung, die die OrdoServus-Web-App
 
 ## 📦 Ausführbare Datei erstellen
 
-Um eine standalone .exe-Datei zu erstellen:
+### Mit auto-py-to-exe (empfohlen, einfacher):
+
+```bash
+pip install auto-py-to-exe
+auto-py-to-exe
+```
+
+**Dann im GUI:**
+- Script Location: `src/main.py`
+- One File: ✅
+- Window Based: ✅
+- Icon: `assets/icon.ico`
+- Additional Files: `src`-Ordner hinzufügen → Destination: `src`
+- Name: `OrdoServus Desktop`
+
+Siehe **[BUILD_GUIDE.md](BUILD_GUIDE.md)** für detaillierte Schritt-für-Schritt-Anleitung mit Screenshots!
+
+Alternativ lade die fertige Konfiguration `auto-py-to-exe-config.json` in auto-py-to-exe.
+
+### Mit PyInstaller (Kommandozeile):
 
 ```bash
 pip install pyinstaller
-pyinstaller --onefile --windowed --icon=assets/icon.ico --name="OrdoServus Desktop" src/main.py
+pyinstaller --onefile --windowed --icon=assets/icon.ico --name="OrdoServus Desktop" --add-data="src;src" src/main.py
 ```
 
-Die .exe-Datei befindet sich dann im `dist/`-Ordner.
+Die .exe-Datei befindet sich dann im `dist/` bzw. `output/`-Ordner.
 
 ## 📁 Projektstruktur
 ```

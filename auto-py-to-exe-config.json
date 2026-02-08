@@ -19,7 +19,11 @@
   },
   {
    "optionDest": "icon_file",
-   "value": "C:/Users/flori/ordotest-desktop/Desktop-test/assets/icon.ico"
+   "value": "assets/icon.ico"
+  },
+  {
+   "optionDest": "name",
+   "value": "OrdoServus Desktop"
   },
   {
    "optionDest": "clean_build",
@@ -54,24 +58,12 @@
    "value": false
   },
   {
-   "optionDest": "datas",
-   "value": "C:/Users/flori/ordotest-desktop/Desktop-test/src;src/"
+   "optionDest": "pathex",
+   "value": "src"
   },
   {
    "optionDest": "hiddenimports",
-   "value": "PyQt5.QtCore"
-  },
-  {
-   "optionDest": "hiddenimports",
-   "value": "PyQt5.QtGui"
-  },
-  {
-   "optionDest": "hiddenimports",
-   "value": "PyQt5.QtWidgets"
-  },
-  {
-   "optionDest": "hiddenimports",
-   "value": "PyQt5.QtWebEngineWidgets"
+   "value": "PyQt5.QtCore,PyQt5.QtGui,PyQt5.QtWidgets,PyQt5.QtWebEngineWidgets"
   }
  ],
  "nonPyinstallerOptions": {
