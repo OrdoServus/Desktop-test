@@ -14,8 +14,8 @@ try:
 except ImportError:
     UPDATER_AVAILABLE = False
 
-from .settings import AppSettings
-from .__version__ import __version__
+from settings import AppSettings
+from __version__ import __version__
 
 class ProfessionalWebApp(QMainWindow):
     def __init__(self, url, app_name="OrdoServus Desktop", github_repo="OrdoServus/Desktop-test"):

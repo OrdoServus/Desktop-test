@@ -6,7 +6,7 @@ import os
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtGui import QIcon
 
-from .ui import ProfessionalWebApp
+from ui import ProfessionalWebApp
 
 def main():
     APP_NAME = "OrdoServus Desktop"
