@@ -2,11 +2,12 @@
 # Licensed under the MIT License
 
 import os
-from PyQt5.QtCore import QUrl, Qt, QTimer
+from PyQt5.QtCore import QUrl, Qt, QTimer, QDateTime
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QAction, QMessageBox,
-                             QSystemTrayIcon, QMenu, QFileDialog, QStyle)
-from PyQt5.QtWebEngineWidgets import QWebEngineView, QWebEngineProfile, QWebEngineDownloadItem
-from PyQt5.QtGui import QKeySequence, QIcon
+                             QSystemTrayIcon, QMenu, QFileDialog, QStyle, QDialog,
+                             QVBoxLayout, QHBoxLayout, QLabel, QComboBox, QTextEdit, QPushButton)
+from PyQt5.QtWebEngineWidgets import QWebEngineView, QWebEngineProfile, QWebEngineDownloadItem, QWebEnginePage
+from PyQt5.QtGui import QKeySequence, QIcon, QDesktopServices
 
 try:
     from updater import check_for_updates
@@ -16,6 +17,21 @@ except ImportError:
 
 from settings import AppSettings
 from __version__ import __version__
+
+class CustomWebEnginePage(QWebEnginePage):
+    def __init__(self, profile):
+        super().__init__(profile)
+        self.allowed_domains = ['sob.ch', 'test-wiki-phi.vercel.app']
+
+    def acceptNavigationRequest(self, url, _type, isMainFrame):
+        if _type == QWebEnginePage.NavigationTypeLinkClicked:
+            domain = url.host()
+            if domain in self.allowed_domains:
+                return True  # Open in app
+            else:
+                QDesktopServices.openUrl(url)
+                return False  # Do not navigate in app
+        return True  # For other types, allow
 
 class ProfessionalWebApp(QMainWindow):
     def __init__(self, url, app_name="OrdoServus Desktop", github_repo="OrdoServus/Desktop-test"):
@@ -37,11 +53,16 @@ class ProfessionalWebApp(QMainWindow):
         self.setWindowTitle(self.app_name)
 
         profile = QWebEngineProfile.defaultProfile()
+        profile.setDownloadPath(os.path.expanduser('~/Downloads'))  # Set default download path
         profile.downloadRequested.connect(self.on_download_requested)
 
         self.browser = QWebEngineView()
+        self.custom_page = CustomWebEnginePage(profile)
+        self.browser.setPage(self.custom_page)
         self.setCentralWidget(self.browser)
         self.browser.setUrl(QUrl(self.home_url))
+        self.browser.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.browser.customContextMenuRequested.connect(self.show_context_menu)
 
         self.create_menu()
         self.apply_theme()
@@ -65,6 +86,13 @@ class ProfessionalWebApp(QMainWindow):
         exit_action.setShortcut(QKeySequence('Ctrl+Q'))
         exit_action.triggered.connect(self.quit_application)
         file_menu.addAction(exit_action)
+
+        file_menu.addSeparator()
+
+        # Feedback
+        feedback_action = QAction('&Feedback', self)
+        feedback_action.triggered.connect(self.show_feedback_dialog)
+        file_menu.addAction(feedback_action)
 
         # Navigation-Menü
         nav_menu = menubar.addMenu('&Navigation')
@@ -183,19 +211,71 @@ class ProfessionalWebApp(QMainWindow):
                 self.show()
                 self.activateWindow()
 
+    def show_context_menu(self, position):
+        menu = QMenu(self)
+
+        # Back
+        back_action = QAction("Zurück", self)
+        back_action.triggered.connect(self.browser.back)
+        back_action.setEnabled(self.browser.history().canGoBack())
+        menu.addAction(back_action)
+
+        # Forward
+        forward_action = QAction("Vorwärts", self)
+        forward_action.triggered.connect(self.browser.forward)
+        forward_action.setEnabled(self.browser.history().canGoForward())
+        menu.addAction(forward_action)
+
+        menu.addSeparator()
+
+        # Reload
+        reload_action = QAction("Neu laden", self)
+        reload_action.triggered.connect(self.browser.reload)
+        menu.addAction(reload_action)
+
+        # Home
+        home_action = QAction("Startseite", self)
+        home_action.triggered.connect(self.go_home)
+        menu.addAction(home_action)
+
+        menu.addSeparator()
+
+        # Zoom In
+        zoom_in_action = QAction("Vergrößern", self)
+        zoom_in_action.triggered.connect(self.zoom_in)
+        menu.addAction(zoom_in_action)
+
+        # Zoom Out
+        zoom_out_action = QAction("Verkleinern", self)
+        zoom_out_action.triggered.connect(self.zoom_out)
+        menu.addAction(zoom_out_action)
+
+        # Zoom Reset
+        zoom_reset_action = QAction("Zoom zurücksetzen", self)
+        zoom_reset_action.triggered.connect(self.zoom_reset)
+        menu.addAction(zoom_reset_action)
+
+        menu.exec_(self.browser.mapToGlobal(position))
+
     def on_download_requested(self, download):
-        path, _ = QFileDialog.getSaveFileName(
-            self,
-            "Datei speichern",
-            download.suggestedFileName()
-        )
+        try:
+            path, _ = QFileDialog.getSaveFileName(
+                self,
+                "Datei speichern",
+                download.suggestedFileName()
+            )
 
-        if path:
-            download.setPath(path)
-            download.accept()
+            if path:
+                download.setPath(path)
+                download.accept()
+                print(f"Download started: {download.suggestedFileName()} to {path}")
 
-            download.finished.connect(lambda: self.download_finished(path))
-            download.downloadProgress.connect(self.download_progress)
+                download.finished.connect(lambda: self.download_finished(path))
+                download.downloadProgress.connect(self.download_progress)
+            else:
+                print("Download cancelled by user")
+        except Exception as e:
+            print(f"Error during download request: {e}")
 
     def download_finished(self, path):
         self.tray_icon.showMessage(
@@ -323,3 +403,61 @@ class ProfessionalWebApp(QMainWindow):
         self.save_settings()
         self.tray_icon.hide()
         QApplication.quit()
+
+    def show_feedback_dialog(self):
+        dialog = FeedbackDialog(self)
+        dialog.exec_()
+
+
+class FeedbackDialog(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Feedback geben")
+        self.setModal(True)
+        self.resize(400, 300)
+
+        layout = QVBoxLayout()
+
+        # Rating
+        rating_layout = QHBoxLayout()
+        rating_layout.addWidget(QLabel("Bewertung:"))
+        self.rating_combo = QComboBox()
+        self.rating_combo.addItems(["1 Stern", "2 Sterne", "3 Sterne", "4 Sterne", "5 Sterne"])
+        rating_layout.addWidget(self.rating_combo)
+        layout.addLayout(rating_layout)
+
+        # Comments
+        layout.addWidget(QLabel("Kommentare:"))
+        self.comment_edit = QTextEdit()
+        layout.addWidget(self.comment_edit)
+
+        # Buttons
+        button_layout = QHBoxLayout()
+        self.submit_button = QPushButton("Absenden")
+        self.submit_button.clicked.connect(self.submit_feedback)
+        button_layout.addWidget(self.submit_button)
+
+        self.cancel_button = QPushButton("Abbrechen")
+        self.cancel_button.clicked.connect(self.reject)
+        button_layout.addWidget(self.cancel_button)
+
+        layout.addLayout(button_layout)
+
+        self.setLayout(layout)
+
+    def submit_feedback(self):
+        rating = self.rating_combo.currentIndex() + 1
+        comment = self.comment_edit.toPlainText().strip()
+
+        # Save to file
+        feedback_file = os.path.join(os.path.dirname(__file__), '..', 'feedback.txt')
+        try:
+            with open(feedback_file, 'a', encoding='utf-8') as f:
+                timestamp = QDateTime.currentDateTime().toString("yyyy-MM-dd hh:mm:ss")
+                f.write(f"{timestamp} - Rating: {rating} - Comment: {comment}\n")
+            print(f"Feedback submitted: Rating {rating}, Comment: {comment}")
+            QMessageBox.information(self, "Feedback", "Vielen Dank für Ihr Feedback!")
+            self.accept()
+        except Exception as e:
+            print(f"Error saving feedback: {e}")
+            QMessageBox.warning(self, "Fehler", "Feedback konnte nicht gespeichert werden.")

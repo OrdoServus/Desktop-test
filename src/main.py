@@ -26,6 +26,9 @@ def main():
     icon_path = os.path.join(os.path.dirname(__file__), '..', 'assets', 'icon.ico')
     if os.path.exists(icon_path):
         app.setWindowIcon(QIcon(icon_path))
+        print(f"Icon loaded successfully from {icon_path}")
+    else:
+        print(f"Icon not found at {icon_path}")
 
     window = ProfessionalWebApp(TARGET_URL, APP_NAME, GITHUB_REPO)
     window.show()
