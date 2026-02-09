@@ -17,8 +17,15 @@ from ui import ProfessionalWebApp
 
 def main():
     APP_NAME = "OrdoServus Desktop"
-    TARGET_URL = "https://sob.ch"
+    TARGET_URL = "https://test-wiki-phi.vercel.app"
     GITHUB_REPO = "OrdoServus/Desktop-test"
+
+    try:
+        import ctypes
+        myappid = 'ordoservus.desktop.app.1.0'
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
+    except:
+        pass
 
     app = QApplication(sys.argv)
     app.setApplicationName(APP_NAME)

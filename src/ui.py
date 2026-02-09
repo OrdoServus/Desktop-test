@@ -19,19 +19,27 @@ from settings import AppSettings
 from __version__ import __version__
 
 class CustomWebEnginePage(QWebEnginePage):
-    def __init__(self, profile):
-        super().__init__(profile)
-        self.allowed_domains = ['sob.ch', 'test-wiki-phi.vercel.app']
+    def __init__(self, profile, parent=None):
+        super().__init__(profile, parent)
+        self.allowed_domains = ['sob.ch', 'www.test-wiki-phi.vercel.app']
 
-    def acceptNavigationRequest(self, url, _type, isMainFrame):
-        if _type == QWebEnginePage.NavigationTypeLinkClicked:
+    def acceptNavigationRequest(self, url, nav_type, isMainFrame):
+        if nav_type == QWebEnginePage.NavigationTypeLinkClicked:
             domain = url.host()
-            if domain in self.allowed_domains:
-                return True  # Open in app
+            
+            is_allowed = False
+            for allowed_domain in self.allowed_domains:
+                if domain == allowed_domain or domain.endswith('.' + allowed_domain):
+                    is_allowed = True
+                    break
+            
+            if is_allowed:
+                return True
             else:
                 QDesktopServices.openUrl(url)
-                return False  # Do not navigate in app
-        return True  # For other types, allow
+                return False
+        
+        return True
 
 class ProfessionalWebApp(QMainWindow):
     def __init__(self, url, app_name="OrdoServus Desktop", github_repo="OrdoServus/Desktop-test"):
@@ -53,16 +61,16 @@ class ProfessionalWebApp(QMainWindow):
         self.setWindowTitle(self.app_name)
 
         profile = QWebEngineProfile.defaultProfile()
-        profile.setDownloadPath(os.path.expanduser('~/Downloads'))  # Set default download path
         profile.downloadRequested.connect(self.on_download_requested)
 
         self.browser = QWebEngineView()
-        self.custom_page = CustomWebEnginePage(profile)
+        self.custom_page = CustomWebEnginePage(profile, self.browser)
         self.browser.setPage(self.custom_page)
+        
         self.setCentralWidget(self.browser)
         self.browser.setUrl(QUrl(self.home_url))
-        self.browser.setContextMenuPolicy(Qt.CustomContextMenu)
-        self.browser.customContextMenuRequested.connect(self.show_context_menu)
+        
+        self.browser.setContextMenuPolicy(Qt.NoContextMenu)
 
         self.create_menu()
         self.apply_theme()
@@ -116,8 +124,6 @@ class ProfessionalWebApp(QMainWindow):
         home_action.setShortcut(QKeySequence('Alt+Home'))
         home_action.triggered.connect(self.go_home)
         nav_menu.addAction(home_action)
-
-        nav_menu.addSeparator()
 
         # Ansicht-Menü
         view_menu = menubar.addMenu('&Ansicht')
@@ -211,84 +217,70 @@ class ProfessionalWebApp(QMainWindow):
                 self.show()
                 self.activateWindow()
 
-    def show_context_menu(self, position):
-        menu = QMenu(self)
-
-        # Back
-        back_action = QAction("Zurück", self)
-        back_action.triggered.connect(self.browser.back)
-        back_action.setEnabled(self.browser.history().canGoBack())
-        menu.addAction(back_action)
-
-        # Forward
-        forward_action = QAction("Vorwärts", self)
-        forward_action.triggered.connect(self.browser.forward)
-        forward_action.setEnabled(self.browser.history().canGoForward())
-        menu.addAction(forward_action)
-
-        menu.addSeparator()
-
-        # Reload
-        reload_action = QAction("Neu laden", self)
-        reload_action.triggered.connect(self.browser.reload)
-        menu.addAction(reload_action)
-
-        # Home
-        home_action = QAction("Startseite", self)
-        home_action.triggered.connect(self.go_home)
-        menu.addAction(home_action)
-
-        menu.addSeparator()
-
-        # Zoom In
-        zoom_in_action = QAction("Vergrößern", self)
-        zoom_in_action.triggered.connect(self.zoom_in)
-        menu.addAction(zoom_in_action)
-
-        # Zoom Out
-        zoom_out_action = QAction("Verkleinern", self)
-        zoom_out_action.triggered.connect(self.zoom_out)
-        menu.addAction(zoom_out_action)
-
-        # Zoom Reset
-        zoom_reset_action = QAction("Zoom zurücksetzen", self)
-        zoom_reset_action.triggered.connect(self.zoom_reset)
-        menu.addAction(zoom_reset_action)
-
-        menu.exec_(self.browser.mapToGlobal(position))
-
     def on_download_requested(self, download):
         try:
+            suggested_name = download.suggestedFileName()
+            
+            downloads_path = os.path.join(os.path.expanduser("~"), "Downloads")
+            default_path = os.path.join(downloads_path, suggested_name)
+            
             path, _ = QFileDialog.getSaveFileName(
                 self,
                 "Datei speichern",
-                download.suggestedFileName()
+                default_path,
+                "Alle Dateien (*.*)"
             )
 
             if path:
                 download.setPath(path)
                 download.accept()
-                print(f"Download started: {download.suggestedFileName()} to {path}")
-
-                download.finished.connect(lambda: self.download_finished(path))
-                download.downloadProgress.connect(self.download_progress)
+                
+                download.finished.connect(lambda: self.download_finished(download, path))
+                download.stateChanged.connect(lambda state: self.download_state_changed(download, state))
+                
+                print(f"Download gestartet: {suggested_name} -> {path}")
             else:
-                print("Download cancelled by user")
+                download.cancel()
+                print("Download abgebrochen")
+                
         except Exception as e:
-            print(f"Error during download request: {e}")
+            print(f"Fehler beim Download: {e}")
+            QMessageBox.warning(
+                self,
+                "Download-Fehler",
+                f"Der Download konnte nicht gestartet werden:\n{str(e)}"
+            )
 
-    def download_finished(self, path):
-        self.tray_icon.showMessage(
-            "Download abgeschlossen",
-            f"Datei gespeichert: {os.path.basename(path)}",
-            QSystemTrayIcon.Information,
-            3000
-        )
+    def download_finished(self, download, path):
+        """Called when download is finished"""
+        if download.state() == QWebEngineDownloadItem.DownloadCompleted:
+            self.tray_icon.showMessage(
+                "Download abgeschlossen",
+                f"Datei gespeichert: {os.path.basename(path)}",
+                QSystemTrayIcon.Information,
+                3000
+            )
+            print(f"Download abgeschlossen: {path}")
+        elif download.state() == QWebEngineDownloadItem.DownloadCancelled:
+            print(f"Download abgebrochen: {path}")
+        elif download.state() == QWebEngineDownloadItem.DownloadInterrupted:
+            QMessageBox.warning(
+                self,
+                "Download unterbrochen",
+                f"Der Download wurde unterbrochen:\n{os.path.basename(path)}"
+            )
+            print(f"Download unterbrochen: {path}")
 
-    def download_progress(self, bytes_received, bytes_total):
-        if bytes_total > 0:
-            progress = int((bytes_received / bytes_total) * 100)
-            self.setWindowTitle(f"{self.app_name} - Download: {progress}%")
+    def download_state_changed(self, download, state):
+        """Track download state changes"""
+        if state == QWebEngineDownloadItem.DownloadInProgress:
+            received = download.receivedBytes()
+            total = download.totalBytes()
+            if total > 0:
+                progress = int((received / total) * 100)
+                self.setWindowTitle(f"{self.app_name} - Download: {progress}%")
+        elif state == QWebEngineDownloadItem.DownloadCompleted:
+            self.setWindowTitle(self.app_name)
 
     def reload_page(self):
         self.browser.reload()
