@@ -2,7 +2,7 @@
 # Licensed under the MIT License
 
 import os
-from PyQt5.QtCore import QUrl, Qt, QTimer, QDateTime
+from PyQt5.QtCore import QUrl, Qt, QTimer, QDateTime, pyqtSignal
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QAction, QMessageBox,
                              QSystemTrayIcon, QMenu, QFileDialog, QStyle, QDialog,
                              QVBoxLayout, QHBoxLayout, QLabel, QComboBox, QTextEdit, QPushButton)
@@ -19,9 +19,11 @@ from settings import AppSettings
 from __version__ import __version__
 
 class CustomWebEnginePage(QWebEnginePage):
+    external_link_clicked = pyqtSignal(QUrl)
+    
     def __init__(self, profile, parent=None):
         super().__init__(profile, parent)
-        self.allowed_domains = ['sob.ch', 'www.test-wiki-phi.vercel.app']
+        self.allowed_domains = ['sob.ch', 'www.sob.ch']
 
     def acceptNavigationRequest(self, url, nav_type, isMainFrame):
         if nav_type == QWebEnginePage.NavigationTypeLinkClicked:
@@ -36,19 +38,24 @@ class CustomWebEnginePage(QWebEnginePage):
             if is_allowed:
                 return True
             else:
-                QDesktopServices.openUrl(url)
-                return False
+                # Externe Links in neuem Fenster öffnen
+                self.external_link_clicked.emit(url)
+                return False 
         
         return True
+    
+    def javaScriptConsoleMessage(self, level, message, lineNumber, sourceID):
+        if "wasm" in message.lower() and "signature" in message.lower():
+            return
 
 class ProfessionalWebApp(QMainWindow):
-    def __init__(self, url, app_name="OrdoServus Desktop", github_repo="OrdoServus/Desktop-test"):
+    def __init__(self, url, app_name="OrdoServus Desktop", github_repo="OrdoServus/Desktop-test", feedback_url=None):
         super().__init__()
         self.home_url = url
         self.app_name = app_name
         self.github_repo = github_repo
+        self.feedback_url = feedback_url
         self.settings = AppSettings()
-        self.dark_mode = self.settings.get_dark_mode()
 
         self.init_ui()
         self.restore_settings()
@@ -61,11 +68,18 @@ class ProfessionalWebApp(QMainWindow):
         self.setWindowTitle(self.app_name)
 
         profile = QWebEngineProfile.defaultProfile()
-        profile.downloadRequested.connect(self.on_download_requested)
-
+        
+        settings = profile.settings()
+        settings.setAttribute(settings.WebAttribute.JavascriptEnabled, True)
+        settings.setAttribute(settings.WebAttribute.LocalStorageEnabled, True)
+        settings.setAttribute(settings.WebAttribute.WebGLEnabled, True)
+        
         self.browser = QWebEngineView()
         self.custom_page = CustomWebEnginePage(profile, self.browser)
         self.browser.setPage(self.custom_page)
+        
+        # Verbinde externes Link-Signal
+        self.custom_page.external_link_clicked.connect(self.open_external_link)
         
         self.setCentralWidget(self.browser)
         self.browser.setUrl(QUrl(self.home_url))
@@ -73,7 +87,6 @@ class ProfessionalWebApp(QMainWindow):
         self.browser.setContextMenuPolicy(Qt.NoContextMenu)
 
         self.create_menu()
-        self.apply_theme()
 
     def create_menu(self):
         menubar = self.menuBar()
@@ -98,9 +111,10 @@ class ProfessionalWebApp(QMainWindow):
         file_menu.addSeparator()
 
         # Feedback
-        feedback_action = QAction('&Feedback', self)
-        feedback_action.triggered.connect(self.show_feedback_dialog)
-        file_menu.addAction(feedback_action)
+        if self.feedback_url:
+            feedback_action = QAction('&Feedback geben', self)
+            feedback_action.triggered.connect(self.open_feedback)
+            file_menu.addAction(feedback_action)
 
         # Navigation-Menü
         nav_menu = menubar.addMenu('&Navigation')
@@ -127,15 +141,6 @@ class ProfessionalWebApp(QMainWindow):
 
         # Ansicht-Menü
         view_menu = menubar.addMenu('&Ansicht')
-
-        # Dark Mode
-        self.dark_mode_action = QAction('&Dark Mode', self)
-        self.dark_mode_action.setCheckable(True)
-        self.dark_mode_action.setChecked(self.dark_mode)
-        self.dark_mode_action.triggered.connect(self.toggle_dark_mode)
-        view_menu.addAction(self.dark_mode_action)
-
-        view_menu.addSeparator()
 
         # Vollbild
         fullscreen_action = QAction('&Vollbild', self)
@@ -217,71 +222,6 @@ class ProfessionalWebApp(QMainWindow):
                 self.show()
                 self.activateWindow()
 
-    def on_download_requested(self, download):
-        try:
-            suggested_name = download.suggestedFileName()
-            
-            downloads_path = os.path.join(os.path.expanduser("~"), "Downloads")
-            default_path = os.path.join(downloads_path, suggested_name)
-            
-            path, _ = QFileDialog.getSaveFileName(
-                self,
-                "Datei speichern",
-                default_path,
-                "Alle Dateien (*.*)"
-            )
-
-            if path:
-                download.setPath(path)
-                download.accept()
-                
-                download.finished.connect(lambda: self.download_finished(download, path))
-                download.stateChanged.connect(lambda state: self.download_state_changed(download, state))
-                
-                print(f"Download gestartet: {suggested_name} -> {path}")
-            else:
-                download.cancel()
-                print("Download abgebrochen")
-                
-        except Exception as e:
-            print(f"Fehler beim Download: {e}")
-            QMessageBox.warning(
-                self,
-                "Download-Fehler",
-                f"Der Download konnte nicht gestartet werden:\n{str(e)}"
-            )
-
-    def download_finished(self, download, path):
-        """Called when download is finished"""
-        if download.state() == QWebEngineDownloadItem.DownloadCompleted:
-            self.tray_icon.showMessage(
-                "Download abgeschlossen",
-                f"Datei gespeichert: {os.path.basename(path)}",
-                QSystemTrayIcon.Information,
-                3000
-            )
-            print(f"Download abgeschlossen: {path}")
-        elif download.state() == QWebEngineDownloadItem.DownloadCancelled:
-            print(f"Download abgebrochen: {path}")
-        elif download.state() == QWebEngineDownloadItem.DownloadInterrupted:
-            QMessageBox.warning(
-                self,
-                "Download unterbrochen",
-                f"Der Download wurde unterbrochen:\n{os.path.basename(path)}"
-            )
-            print(f"Download unterbrochen: {path}")
-
-    def download_state_changed(self, download, state):
-        """Track download state changes"""
-        if state == QWebEngineDownloadItem.DownloadInProgress:
-            received = download.receivedBytes()
-            total = download.totalBytes()
-            if total > 0:
-                progress = int((received / total) * 100)
-                self.setWindowTitle(f"{self.app_name} - Download: {progress}%")
-        elif state == QWebEngineDownloadItem.DownloadCompleted:
-            self.setWindowTitle(self.app_name)
-
     def reload_page(self):
         self.browser.reload()
 
@@ -293,36 +233,6 @@ class ProfessionalWebApp(QMainWindow):
             self.showNormal()
         else:
             self.showFullScreen()
-
-    def toggle_dark_mode(self):
-        self.dark_mode = not self.dark_mode
-        self.settings.set_dark_mode(self.dark_mode)
-        self.apply_theme()
-
-    def apply_theme(self):
-        if self.dark_mode:
-            # Dark Mode
-            self.setStyleSheet("""
-                QMainWindow {
-                    background-color: #1e1e1e;
-                }
-                QMenuBar {
-                    background-color: #2d2d2d;
-                    color: #ffffff;
-                }
-                QMenuBar::item:selected {
-                    background-color: #3d3d3d;
-                }
-                QMenu {
-                    background-color: #2d2d2d;
-                    color: #ffffff;
-                }
-                QMenu::item:selected {
-                    background-color: #3d3d3d;
-                }
-            """)
-        else:
-            self.setStyleSheet("")
 
     def zoom_in(self):
         current_zoom = self.browser.zoomFactor()
@@ -339,6 +249,43 @@ class ProfessionalWebApp(QMainWindow):
     def zoom_reset(self):
         self.browser.setZoomFactor(1.0)
         self.settings.set_zoom_level(1.0)
+
+    def open_feedback(self):
+        if self.feedback_url:
+            QDesktopServices.openUrl(QUrl(self.feedback_url))
+        else:
+            QMessageBox.information(
+                self,
+                "Feedback",
+                "Keine Feedback-URL konfiguriert.\n\n"
+                "Bitte setze die FEEDBACK_URL Variable in main.py"
+            )
+
+    def open_external_link(self, url):
+        """Öffnet externe Links in einem neuen Fenster"""
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Externer Link")
+        dialog.setGeometry(100, 100, 1000, 700)
+        
+        layout = QVBoxLayout()
+        dialog.setLayout(layout)
+        
+        # Info-Label
+        info_label = QLabel(f"Externe URL: {url.toString()}")
+        info_label.setWordWrap(True)
+        layout.addWidget(info_label)
+        
+        # WebView für externe Seite
+        external_browser = QWebEngineView()
+        external_browser.setUrl(url)
+        layout.addWidget(external_browser)
+        
+        # Schließen-Button
+        close_btn = QPushButton("Schließen")
+        close_btn.clicked.connect(dialog.close)
+        layout.addWidget(close_btn)
+        
+        dialog.exec_()
 
     def show_about(self):
         update_info = ""
@@ -379,7 +326,6 @@ class ProfessionalWebApp(QMainWindow):
     def save_settings(self):
         self.settings.save_geometry(self)
         self.settings.set_zoom_level(self.browser.zoomFactor())
-        self.settings.set_dark_mode(self.dark_mode)
 
     def closeEvent(self, event):
         event.ignore()
@@ -395,61 +341,3 @@ class ProfessionalWebApp(QMainWindow):
         self.save_settings()
         self.tray_icon.hide()
         QApplication.quit()
-
-    def show_feedback_dialog(self):
-        dialog = FeedbackDialog(self)
-        dialog.exec_()
-
-
-class FeedbackDialog(QDialog):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.setWindowTitle("Feedback geben")
-        self.setModal(True)
-        self.resize(400, 300)
-
-        layout = QVBoxLayout()
-
-        # Rating
-        rating_layout = QHBoxLayout()
-        rating_layout.addWidget(QLabel("Bewertung:"))
-        self.rating_combo = QComboBox()
-        self.rating_combo.addItems(["1 Stern", "2 Sterne", "3 Sterne", "4 Sterne", "5 Sterne"])
-        rating_layout.addWidget(self.rating_combo)
-        layout.addLayout(rating_layout)
-
-        # Comments
-        layout.addWidget(QLabel("Kommentare:"))
-        self.comment_edit = QTextEdit()
-        layout.addWidget(self.comment_edit)
-
-        # Buttons
-        button_layout = QHBoxLayout()
-        self.submit_button = QPushButton("Absenden")
-        self.submit_button.clicked.connect(self.submit_feedback)
-        button_layout.addWidget(self.submit_button)
-
-        self.cancel_button = QPushButton("Abbrechen")
-        self.cancel_button.clicked.connect(self.reject)
-        button_layout.addWidget(self.cancel_button)
-
-        layout.addLayout(button_layout)
-
-        self.setLayout(layout)
-
-    def submit_feedback(self):
-        rating = self.rating_combo.currentIndex() + 1
-        comment = self.comment_edit.toPlainText().strip()
-
-        # Save to file
-        feedback_file = os.path.join(os.path.dirname(__file__), '..', 'feedback.txt')
-        try:
-            with open(feedback_file, 'a', encoding='utf-8') as f:
-                timestamp = QDateTime.currentDateTime().toString("yyyy-MM-dd hh:mm:ss")
-                f.write(f"{timestamp} - Rating: {rating} - Comment: {comment}\n")
-            print(f"Feedback submitted: Rating {rating}, Comment: {comment}")
-            QMessageBox.information(self, "Feedback", "Vielen Dank für Ihr Feedback!")
-            self.accept()
-        except Exception as e:
-            print(f"Error saving feedback: {e}")
-            QMessageBox.warning(self, "Fehler", "Feedback konnte nicht gespeichert werden.")

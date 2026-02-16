@@ -7,12 +7,6 @@ class AppSettings:
     def __init__(self, organization="OrdoServus", app_name="OrdoServus Desktop"):
         self.settings = QSettings(organization, app_name)
 
-    def get_dark_mode(self):
-        return self.settings.value("dark_mode", False, type=bool)
-
-    def set_dark_mode(self, value):
-        self.settings.setValue("dark_mode", value)
-
     def get_zoom_level(self):
         return self.settings.value("zoom_level", 1.0, type=float)
 

@@ -17,9 +17,10 @@ from ui import ProfessionalWebApp
 
 def main():
     APP_NAME = "OrdoServus Desktop"
-    TARGET_URL = "https://test-wiki-phi.vercel.app"
+    TARGET_URL = "https://sob.ch"
     GITHUB_REPO = "OrdoServus/Desktop-test"
-
+    FEEDBACK_URL = "https://github.com/OrdoServus/Desktop-test/issues/new"
+    
     try:
         import ctypes
         myappid = 'ordoservus.desktop.app.1.0'
@@ -37,7 +38,7 @@ def main():
     else:
         print(f"Icon not found at {icon_path}")
 
-    window = ProfessionalWebApp(TARGET_URL, APP_NAME, GITHUB_REPO)
+    window = ProfessionalWebApp(TARGET_URL, APP_NAME, GITHUB_REPO, FEEDBACK_URL)
     window.show()
 
     sys.exit(app.exec_())
